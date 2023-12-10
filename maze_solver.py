@@ -73,3 +73,12 @@ class Cell:
             p1 = Point(self.top_left.x, self.bottom_right.y)
             p2 = Point(self.bottom_right.x, self.bottom_right.y)
             self.win.draw_line(Line(p1, p2), "black")
+
+    def draw_move(self, to_cell: 'Cell', undo=False):
+        center1 = Point((self.top_left.x + self.bottom_right.x) // 2, (self.top_left.y + self.bottom_right.y) // 2)
+        center2 = Point((to_cell.top_left.x + to_cell.bottom_right.x) // 2, (to_cell.top_left.y + to_cell.bottom_right.y) // 2)
+        line = Line(center1, center2)
+        if not undo:
+            self.win.draw_line(line, "red")
+        else:
+            self.win.draw_line(line, "gray")
