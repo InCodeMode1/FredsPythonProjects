@@ -1,1 +1,1 @@
-Random projects
+Ensure Tkinter Module is available and compatible with Python version used.
