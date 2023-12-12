@@ -1,4 +1,5 @@
 import time
+import random
 from tkinter import Tk, BOTH, Canvas
 
 
@@ -48,53 +49,60 @@ class Window:
 
 class Cell:
 
-    def __init__(self, top_left: Point, bottom_right: Point, win: Window = None):
+    def __init__(self, win: Window = None):
         self.has_left_wall = True
         self.has_right_wall = True
         self.has_top_wall = True
         self.has_bottom_wall = True
-        self.top_left = top_left
-        self.bottom_right = bottom_right
+        self.x1 = None
+        self.y1 = None
+        self.x2 = None
+        self.y2 = None
+        self.visited = False
         self.win = win
 
-    def draw_cell(self):
+    def draw_cell(self, x1, y1, x2, y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
         if self.has_left_wall:
-            p1 = Point(self.top_left.x, self.top_left.y)
-            p2 = Point(self.top_left.x, self.bottom_right.y)
+            p1 = Point(x1, self.y1)
+            p2 = Point(x1, self.y2)
             self.win.draw_line(Line(p1, p2))
         else:
-            p1 = Point(self.top_left.x, self.top_left.y)
-            p2 = Point(self.top_left.x, self.bottom_right.y)
+            p1 = Point(x1, y1)
+            p2 = Point(x1, y2)
             self.win.draw_line(Line(p1, p2), "white")
         if self.has_right_wall:
-            p1 = Point(self.bottom_right.x, self.top_left.y)
-            p2 = Point(self.bottom_right.x, self.bottom_right.y)
+            p1 = Point(x2, y1)
+            p2 = Point(x2, y2)
             self.win.draw_line(Line(p1, p2))
         else:
-            p1 = Point(self.bottom_right.x, self.top_left.y)
-            p2 = Point(self.bottom_right.x, self.bottom_right.y)
+            p1 = Point(x2, y1)
+            p2 = Point(x2, y2)
             self.win.draw_line(Line(p1, p2), "white")
         if self.has_top_wall:
-            p1 = Point(self.top_left.x, self.top_left.y)
-            p2 = Point(self.bottom_right.x, self.top_left.y)
+            p1 = Point(x1, y1)
+            p2 = Point(x2, y1)
             self.win.draw_line(Line(p1, p2))
         else:
-            p1 = Point(self.top_left.x, self.top_left.y)
-            p2 = Point(self.bottom_right.x, self.top_left.y)
+            p1 = Point(x1, y1)
+            p2 = Point(x2, y1)
             self.win.draw_line(Line(p1, p2), "white")
         if self.has_bottom_wall:
-            p1 = Point(self.top_left.x, self.bottom_right.y)
-            p2 = Point(self.bottom_right.x, self.bottom_right.y)
+            p1 = Point(x1, y2)
+            p2 = Point(x2, y2)
             self.win.draw_line(Line(p1, p2))
         else:
-            p1 = Point(self.top_left.x, self.bottom_right.y)
-            p2 = Point(self.bottom_right.x, self.bottom_right.y)
+            p1 = Point(x1, y2)
+            p2 = Point(x2, y2)
             self.win.draw_line(Line(p1, p2), "white")
 
     def draw_move(self, to_cell: 'Cell', undo=False):
-        center1 = Point((self.top_left.x + self.bottom_right.x) // 2, (self.top_left.y + self.bottom_right.y) // 2)
-        center2 = Point((to_cell.top_left.x + to_cell.bottom_right.x) // 2,
-                        (to_cell.top_left.y + to_cell.bottom_right.y) // 2)
+        center1 = Point((self.x1 + self.x2) // 2, (self.y1 + self.y2) // 2)
+        center2 = Point((to_cell.x1 + to_cell.x2) // 2,
+                        (to_cell.y1 + to_cell.y2) // 2)
         line = Line(center1, center2)
         if self.win is None:
             return
@@ -106,52 +114,49 @@ class Cell:
 
 class Maze:
 
-    def __init__(self, maze_pos: Point, num_cols: int, num_rows: int, cell_size: Point, win: Window = None):
-        self._maze_pos = maze_pos
+    def __init__(self, x1, y1, num_cols: int, num_rows: int, cell_size_x, cell_size_y, win: Window = None, seed = None):
+        self._x1 = x1
+        self._y1 = y1
+
         self._win = win
         self._num_cols = num_cols
         self._num_rows = num_rows
-        self._cell_size = cell_size
-        self._cells = self._create_cells(num_cols, num_rows)
-        self._draw_cell()
+        self._cell_size_x = cell_size_x
+        self._cell_size_y = cell_size_y
+        self._cells = []
+
+        if seed is not None:
+            random.seed(seed)
+        self._create_cells()
         self._break_entrance_and_exit()
 
-    def _create_cells(self, num_cols: int, num_rows: int):
-        # PROBLEM IS HERE DEBUG!!!
-        cells = [[] for _ in range(num_rows)]
-        cell_pos = Point(self._maze_pos.x, self._maze_pos.y)
+    def _create_cells(self):
+        for _ in range(self._num_cols):
+            cells = []
+            for _ in range(self._num_rows):
+                cells.append(Cell(self._win))
+            self._cells.append(cells)
+        for i in range(self._num_cols):
+            for j in range(self._num_rows):
+                self._draw_cell(i, j)
 
-        for row in cells:
-            for _ in range(num_cols):
-                br = Point((cell_pos.x + self._cell_size.x), cell_pos.y + self._cell_size.y)
-                row.append(Cell(cell_pos, br, self._win))
-                cell_pos.x += self._cell_size.x
-            cell_pos.x = self._maze_pos.x
-            cell_pos.y += self._cell_size.y
-        # for i in range(num_rows):
-        #     row_cells = []
-        #     for j in range(num_cols):
-        #         cell_pos = Point(self._maze_pos.x + j * self._cell_size.x, self._maze_pos.y + i * self._cell_size.y)
-        #         br = Point(cell_pos.x + self._cell_size.x, cell_pos.y + self._cell_size.y)
-        #         row_cells.append(Cell(cell_pos, br, self._win))
-        #     cells.append(row_cells)
-        return cells
-
-    def _draw_cell(self):
-        for row in self._cells:
-            for cell in row:
-                if self._win is None:
-                    return
-                cell.draw_cell()
-                self._animate()
+    def _draw_cell(self, i, j):
+        if self._win is None:
+            return
+        x1 = self._x1 + i * self._cell_size_x
+        y1 = self._y1 + j * self._cell_size_y
+        x2 = x1 + self._cell_size_x
+        y2 = y1 + self._cell_size_y
+        self._cells[i][j].draw_cell(x1, y1, x2, y2)
+        self._animate()
 
     def _break_entrance_and_exit(self):
 
         self._cells[0][0].has_left_wall = False
-        self._cells[0][0].draw_cell()
+        self._draw_cell(0, 0)
 
-        self._cells[-1][-1].has_bottom_wall = False
-        self._cells[-1][-1].draw_cell()
+        self._cells[self._num_cols - 1][self._num_rows - 1].has_bottom_wall = False
+        self._draw_cell(self._num_cols - 1, self._num_rows - 1)
 
     def _animate(self):
         if self._win is None:
