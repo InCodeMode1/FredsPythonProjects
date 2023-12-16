@@ -231,7 +231,7 @@ class Maze:
         if self._cells[i][j] == self._cells[self._num_cols - 1][self._num_rows - 1]:
             print("Maze Solved!")
             return True
-
+        # Yes the direction values are never really used and were initially for a different idea but they're cool so im leaving them in there
         for direction in directions:
             # check right
 
